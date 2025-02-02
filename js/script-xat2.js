@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    require('dotenv').config({ path: './.env.api2' });  // Cargar el segundo archivo .env
+    require('dotenv').config({ path: './.env.api2' });  
 
     const apiKey = process.env.API_KEY_2;
     const chatOutput = document.getElementById('chatOutput');
