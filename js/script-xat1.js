@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const apiKey = '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';  
+    require('dotenv').config({ path: './.env.api1' });  // Cargar el primer archivo .env
+
+    const apiKey = process.env.API_KEY_1;  
     const chatOutput = document.getElementById('chatOutput');
     const userInput = document.getElementById('userInput');
     const buttonEnviar = document.getElementById('buttonEnviar');
