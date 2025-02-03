@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-
-    const apiKey = "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";  
+ 
     const chatOutput = document.getElementById('chatOutput');
     const userInput = document.getElementById('userInput');
     const buttonEnviar = document.getElementById('buttonEnviar');
@@ -20,10 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
     instructo3Img.classList.remove("hidden");
     floatingimg.classList.add("hidden");
 
-    const systemMessage = {
-        role: "system",
-        content: "Ets un tutor virtual dissenyat per ajudar els estudiants a aprendre de manera efectiva. Proporciones explicacions clares, exemples pràctics i exercicis de prova adaptats al nivell de l'estudiant, amb les respostes respectives. També ajudes amb tècniques destudi, resols dubtes i ajudes a planificar horaris destudi. Fes preguntes a l'usuari per avaluar-ne la comprensió i fomenta l'aprenentatge actiu. Sempre demana aclariments si alguna cosa no és clara i ajusta les explicacions i la dificultat segons les necessitats de l'usuari. Fes servir emojis quan sigui útil per fer les respostes més dinàmiques i fàcils d'entendre. Recorda estructurar bé les respostes, en paràgrafs, perquè es puguin entendre millor."
-    };
 
     let inCallMode = false; 
     let recognition; 
@@ -97,25 +92,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function tutorVirtual(message) {
-        const prompt = `Ets un tutor virtual. L'usuari diu: ${message}\n\nSi creus que necessita més informació, proporciona una paraula clau per buscar o escriu 'No és necessari'.`;
-
         try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch('http://localhost:3002/api/tutor', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
                 },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [systemMessage, { role: 'user', content: message }],
-                    max_tokens: Math.min(400 - countTokens(message), 150),
-                })
+                body: JSON.stringify({ message }),
             });
-
+    
             const data = await response.json();
-            const respuesta = data.choices?.[0]?.message?.content || 'Error: No es pot generar una resposta';
-
+            const respuesta = data.response || 'Error: No es pot generar una resposta';
+    
             if (respuesta.toLowerCase().includes("buscar") || respuesta.toLowerCase().includes("enllaços")) {
                 const enlaces = await searchWeb(respuesta);
                 if (enlaces.length > 0) {
