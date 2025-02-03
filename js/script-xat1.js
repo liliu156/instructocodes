@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    
+
     const apiKey = "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";  
     const chatOutput = document.getElementById('chatOutput');
     const userInput = document.getElementById('userInput');
