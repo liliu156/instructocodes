@@ -1,6 +1,6 @@
   [[redirects]]
-  from = "/*"
-  to = "https://instructoria.netlify.app/:path"
+  from = "https://679d2505563cda1d8182c620--instructoria.netlify.app"
+  to = "https://instructoria.netlify.app"
   status = 301
   force = false
   conditions = {Language = ["en"], Country = ["ES"], Role = ["admin"]}
