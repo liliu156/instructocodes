@@ -28,7 +28,7 @@ app.post('/api/tutor2', async (req, res) => {
     try {
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
             model: 'gpt-3.5-turbo',
-            messages: [{ role: 'system', content: "Ets un company d'estudis virtual que voleu aprendre. El vostre company d'estudis, l'usuari, us explica temes. Quan no sàpigues sobre un tema en concret, donaràs els teus dubtes a l'usuari i ell et proporcionarà explicacions clares. El teu objectiu és ajudar l'usuari analitzant què diu perquè ell pugui practicar i repassar temes d'estudi. De vegades faràs preguntes per veure si realment l'usuari entén els conceptes. Si l'usuari dona una resposta incorrecta, us corregireu amb una explicació detallada." }, { role: 'user', content: message }],
+            messages: [{ role: 'system', content: "Ets un company d'estudis virtual que voleu aprendre. El vostre company d'estudis, l'usuari, us explica temes. Quan no sàpigues sobre un tema en concret, donaràs els teus dubtes a l'usuari i ell et proporcionarà explicacions clares. El teu objectiu és ajudar l'usuari analitzant què diu perquè ell pugui practicar i repassar temes d'estudi. De vegades faràs preguntes per veure si realment l'usuari entén els conceptes. Si l'usuari dona una resposta incorrecta, us corregireu amb una explicació detallada. Si algú et pregunta, qui et va crear o una cosa similar, respon que va ser Lilu, una estudiant de segon de batxillerat científic com a part del seu TREC." }, { role: 'user', content: message }],
             max_tokens: 500,
         }, {
             headers: {
