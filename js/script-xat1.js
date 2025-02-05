@@ -221,4 +221,19 @@ document.addEventListener("DOMContentLoaded", () => {
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
     });
+
+    if ('installOnDeviceSpeechRecognition' in navigator) {
+        const lang = "ca-ES"; // Código BCP 47 para catalán
+        const success = navigator.installOnDeviceSpeechRecognition(lang);
+        
+        if (success) {
+            console.log("El reconocimiento de voz en catalán se está instalando.");
+        } else {
+            console.log("No se pudo iniciar la instalación del reconocimiento de voz.");
+        }
+    } else {
+        console.log("Tu navegador no soporta installOnDeviceSpeechRecognition.");
+    }
+    
+
 });
