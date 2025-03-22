@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function tutorVirtual(message) {
         try {
-            const response = await fetch('http://localhost:3002/api/tutor', {
+            const response = await fetch('/api/tutor', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
