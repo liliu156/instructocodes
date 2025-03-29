@@ -1,7 +1,6 @@
-// netlify/functions/server.js
 const axios = require('axios');
 
-exports.handler = async function(event, context) {
+exports.handler = async (event, context) => {
   // Solo permitir solicitudes POST
   if (event.httpMethod !== "POST") {
     return {
@@ -11,6 +10,7 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    // Parsear el cuerpo de la solicitud
     const { message } = JSON.parse(event.body);
     
     // Llamar a la API de OpenAI
@@ -38,9 +38,11 @@ exports.handler = async function(event, context) {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
       },
-      body: JSON.stringify({ response: response.data.choices[0].message.content })
+      body: JSON.stringify({ 
+        response: response.data.choices[0].message.content 
+      })
     };
   } catch (error) {
     console.error("Error al enviar el mensaje:", error);
@@ -49,7 +51,7 @@ exports.handler = async function(event, context) {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
       },
       body: JSON.stringify({ 
         error: "Error al enviar el mensaje", 

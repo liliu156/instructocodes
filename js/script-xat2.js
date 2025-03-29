@@ -93,11 +93,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function tutorVirtual(message) {
         try {
-            const response = await fetch('http://localhost:3004/api/tutor2', {
+            const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ message }),
             });
     

@@ -95,12 +95,14 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ message }),
             });
     
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
             const respuesta = data.response || 'Error: No es pot generar una resposta';
     
@@ -114,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 showInstructoMessage(respuesta);
             }
+            
         } catch (error) {
             console.error("Error al enviar el missatge:", error);
             showInstructoMessage("Error: No s'ha pogut enviar el missatge. Intenta-ho de nou.");
