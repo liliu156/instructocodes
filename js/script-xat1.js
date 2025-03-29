@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function tutorVirtual(message) {
         try {
-            const response = await fetch('/.netlify/functions/server', {
+            const response = await fetch('/.netlify/funcions/server', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ message }),
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 showInstructoMessage(respuesta);
             }
-            
+
         } catch (error) {
             console.error("Error al enviar el missatge:", error);
             showInstructoMessage("Error: No s'ha pogut enviar el missatge. Intenta-ho de nou.");
