@@ -75,28 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function searchWeb(query) {
-        const searchUrl = `https://api.duckduckgo.com/?q=${query}&format=json`;
-        try {
-            const response = await fetch(searchUrl);
-            if (!response.ok) {
-                throw new Error(`Error en la búsqueda: ${response.statusText}`);
-            }
-            const data = await response.json();
-            const links = data.RelatedTopics?.map(topic => topic.FirstURL).filter(url => url) || [];
-            return links.slice(0, 3); 
-        } catch (error) {
-            console.error("Error al buscar en la web:", error);
-            return [];
-        }
-    }
-
     async function tutorVirtual(message) {
         try {
             const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ message }),
+                inCallMode: inCallMode
             });
     
             if (!response.ok) {
@@ -106,16 +91,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
             const respuesta = data.response || 'Error: No es pot generar una resposta';
     
-            if (respuesta.toLowerCase().includes("buscar") || respuesta.toLowerCase().includes("enllaços")) {
-                const enlaces = await searchWeb(respuesta);
-                if (enlaces.length > 0) {
-                    showInstructoMessage(`Aquí tens alguns enllaços que et poden ajudar:\n${enlaces.join("\n")}`);
-                } else {
-                    showInstructoMessage("No s'han trobat enllaços rellevants.");
-                }
-            } else {
-                showInstructoMessage(respuesta);
+        showInstructoMessage(respuesta, () => {
+            // If we have an audio URL and are in call mode, play it
+            if (inCallMode && data.audioUrl) {
+                fetch(data.audioUrl)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const audioUrl = URL.createObjectURL(blob);
+                        playAudio(audioUrl);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching audio:", error);
+                    });
             }
+        });
 
         } catch (error) {
             console.error("Error al enviar el missatge:", error);
@@ -130,11 +119,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleMicrophone() {
         if (!isMicrophoneOpen) {
-            recognition.start();
+            if (inCallMode) { 
+                recordAudio();
+            } else {    
+                recognition.start();
+            }
             microfonBtn.textContent = "🎤"; 
             isMicrophoneOpen = true;
         } else {
-            recognition.stop();
+            if (inCallMode) { 
+                recognition.stop();
+            }  
             microfonBtn.textContent = "🔇";
             isMicrophoneOpen = false;
         }
@@ -175,6 +170,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onerror = (event) => {
             console.error("Error al reconeixement de la veu:", event.error);
+        };
+    }
+
+    async function recordAudio() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            const audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const formData = new FormData();
+                formData.append("file", audioBlob, "audio.mp3");
+                
+                try {
+                    const response = await fetch('/.netlify/functions/server/transcribe', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    enviarMissatge(data.text);
+                } catch (error) {
+                    console.error("Error al transcribir el audio:", error);
+                }
+            };
+
+            mediaRecorder.start();
+            setTimeout(() => mediaRecorder.stop(), 5000); // Graba por 5 segundos
+        } catch (error) {
+            console.error("Error al acceder al micrófono:", error);
+        }
+    }
+
+    function playAudio(audioUrl) {
+        const audioElement = new Audio(audioUrl);
+        audioElement.play();
+        
+        audioElement.onplay = () => {
+            parlantImatge.classList.remove("hidden");
+            escoltantImatge.classList.add("hidden");
+        };
+        
+        audioElement.onended = () => {
+            parlantImatge.classList.add("hidden");
+            escoltantImatge.classList.remove("hidden");
         };
     }
 
@@ -224,19 +273,5 @@ document.addEventListener("DOMContentLoaded", () => {
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
     });
-
-    if ('installOnDeviceSpeechRecognition' in navigator) {
-        const lang = "ca-ES"; // Código BCP 47 para catalán
-        const success = navigator.installOnDeviceSpeechRecognition(lang);
-        
-        if (success) {
-            console.log("El reconocimiento de voz en catalán se está instalando.");
-        } else {
-            console.log("No se pudo iniciar la instalación del reconocimiento de voz.");
-        }
-    } else {
-        console.log("Tu navegador no soporta installOnDeviceSpeechRecognition.");
-    }
-    
 
 });
