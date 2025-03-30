@@ -160,6 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function recordAudio() {
+
+        floatingimg.classList.add("hidden");
+        
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
@@ -205,13 +208,11 @@ document.addEventListener("DOMContentLoaded", () => {
         audioElement.onplay = () => {
             parlantImatge.classList.remove("hidden");
             escoltantImatge.classList.add("hidden");
-            floatingimg.classList.add("hidden");
         };
         
         audioElement.onended = () => {
             parlantImatge.classList.add("hidden");
             escoltantImatge.classList.remove("hidden");
-            floatingimg.classList.add("hidden");
         };
     }
 
