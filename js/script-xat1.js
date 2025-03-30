@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const xatFlotant = document.getElementById('xatFlotant');
     const escoltantImatge = document.getElementById('escoltantImatge');
-    const parlantImatge = document.getElementById('parlantImatge');
     const indicadorEscoltant = document.getElementById('indicadorEscoltant');
     const audio = document.getElementById('audio');
     const tancarXat = document.getElementById('tancarXat');
@@ -127,7 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         xatFlotant.classList.remove("hidden");
         escoltantImatge.classList.remove("hidden");
-        parlantImatge.classList.add("hidden");
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
         buttonEnviar.classList.add("hidden"); 
@@ -162,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function recordAudio() {
 
         floatingimg.classList.add("hidden");
-        
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
@@ -206,12 +204,10 @@ document.addEventListener("DOMContentLoaded", () => {
         audioElement.play();
         
         audioElement.onplay = () => {
-            parlantImatge.classList.remove("hidden");
             escoltantImatge.classList.add("hidden");
         };
         
         audioElement.onended = () => {
-            parlantImatge.classList.add("hidden");
             escoltantImatge.classList.remove("hidden");
         };
     }
@@ -227,7 +223,6 @@ document.addEventListener("DOMContentLoaded", () => {
         instructo2Img.classList.remove("hidden");
         instructo3Img.classList.remove("hidden"); 
         escoltantImatge.classList.add("hidden");
-        parlantImatge.classList.add("hidden");
         buttonEnviar.classList.remove("hidden"); 
     });
 
