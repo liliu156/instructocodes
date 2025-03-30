@@ -55,24 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             i++;
         }, 50);
-
-        if (inCallMode) { 
-            const synth = window.speechSynthesis;
-            const utterance = new SpeechSynthesisUtterance(message);
-
-            parlantImatge.classList.remove("hidden");
-            escoltantImatge.classList.add("hidden");
-            floatingimg.classList.add("hidden");
-
-            utterance.onend = () => {
-                parlantImatge.classList.add("hidden");
-                escoltantImatge.classList.remove("hidden");
-                floatingimg.classList.add("hidden");
-                if (callback) callback();
-            };
-
-            synth.speak(utterance);
-        }
     }
 
     async function tutorVirtual(message) {
