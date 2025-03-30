@@ -80,8 +80,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message }),
-                inCallMode: inCallMode
+                body: JSON.stringify({ 
+                    message: message,
+                    inCallMode: inCallMode
+                }),
             });
     
             if (!response.ok) {
