@@ -131,6 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
         buttonEnviar.classList.add("hidden"); 
+        floatingimg.classList.add("hidden");
 
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'ca-ES';  
@@ -139,6 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onstart = () => {
             indicadorEscoltant.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
         };
 
         recognition.onresult = (event) => {
@@ -190,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), 5000); // Graba por 5 segundos
+            setTimeout(() => mediaRecorder.stop(), 1000); // Graba por 5 segundos
         } catch (error) {
             console.error("Error al acceder al micrófono:", error);
         }
@@ -203,11 +205,13 @@ document.addEventListener("DOMContentLoaded", () => {
         audioElement.onplay = () => {
             parlantImatge.classList.remove("hidden");
             escoltantImatge.classList.add("hidden");
+            floatingimg.classList.add("hidden");
         };
         
         audioElement.onended = () => {
             parlantImatge.classList.add("hidden");
             escoltantImatge.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
         };
     }
 
