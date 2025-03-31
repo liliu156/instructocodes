@@ -58,22 +58,46 @@ document.addEventListener("DOMContentLoaded", () => {
         const instructoMsgElement = document.createElement("p");
         instructoMsgElement.classList.add("instructo-missatge");
         instructoMsgElement.style.whiteSpace = "pre-line";
-        instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>"+ message;
+        instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>";
         chatOutput.appendChild(instructoMsgElement);
 
+        // Hide instructo images and show floating image during typing animation
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
-
+        
         if (inCallMode) {
-            instructo2Img.classList.add("hidden");
-            instructo3Img.classList.add("hidden");
             escoltantImatge.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
         } else {
-            instructo2Img.classList.add("hidden");
-            instructo3Img.classList.add("hidden");
             floatingimg.classList.remove("hidden");
         }
-        if (callback) callback();
+        
+        // Word by word typing effect
+        const words = message.split(' ');
+        let wordIndex = 0;
+        
+        function typeNextWord() {
+            if (wordIndex < words.length) {
+                instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>" + 
+                    words.slice(0, wordIndex + 1).join(' ');
+                wordIndex++;
+                setTimeout(typeNextWord, 50); // Adjust speed of typing here
+            } else {
+                // Typing finished
+                if (!inCallMode) {
+                    // Only restore instructo images in text mode when typing is done
+                    setTimeout(() => {
+                        floatingimg.classList.add("hidden");
+                        instructo2Img.classList.remove("hidden");
+                        instructo3Img.classList.remove("hidden");
+                    }, 500); // Small delay before restoring images
+                }
+                if (callback) callback();
+            }
+        }
+        
+        // Start typing animation
+        typeNextWord();
     }
 
     async function tutorVirtual(message) {
@@ -172,7 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         recognition.onend = () => {
-            escoltantImatge.classList.add("hidden");
             escoltantImatge.classList.add("hidden");
         };
 
