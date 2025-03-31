@@ -3,6 +3,8 @@ const { OpenAI } = require('openai');
 const formidable = require('formidable');
 const fs = require('fs');
 const util = require('util');
+const pdfParse = require('pdf-parse');
+
 const readFile = util.promisify(fs.readFile);
 
 // Configurar OpenAI con tu clave API
@@ -10,8 +12,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY_1
 });
 
-exports.handler = async function(event, context) {
-  // Verificar método HTTP
+exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -20,66 +21,42 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // Usar formidable para analizar los datos del formulario y archivos
     const { fields, files } = await parseFormData(event);
     const message = fields.message;
     const inCallMode = fields.inCallMode === 'true';
     const file = files.file ? files.file[0] : null;
 
-    let responseData = {
-      response: '',
-      audioUrl: null
-    };
+    let responseData = { response: '', audioBase64: null };
 
-    // Procesar el mensaje (y el archivo si existe)
     if (file) {
-      // Si hay un archivo, procesarlo y enviarlo a OpenAI
+      // Leer el PDF y extraer el texto
       const pdfData = await readFile(file.filepath);
-      const base64String = pdfData.toString('base64');
-      
-      // Crear solicitud para OpenAI con el archivo
-      const response = await openai.responses.create({
-        model: "gpt-4o", // O el modelo que soporte PDF como entrada
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_file",
-                filename: file.originalFilename,
-                file_data: `data:application/pdf;base64,${base64String}`,
-              },
-              {
-                type: "input_text",
-                text: message,
-              },
-            ],
-          },
-        ],
+      const pdfText = (await pdfParse(pdfData)).text;
+
+      // Enviar el contenido extraído y el mensaje a OpenAI
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "Eres un asistente útil que analiza documentos PDF." },
+          { role: "user", content: `Este es el texto del documento:\n${pdfText}\n\nPregunta del usuario: ${message}` }
+        ]
       });
-      
-      responseData.response = response.output_text;
+
+      responseData.response = response.choices[0].message.content;
     } else {
       // Procesar solo el mensaje sin archivo
-      const response = await openai.responses.create({
-        model: "gpt-4o", // O el modelo que prefieras usar
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: message,
-              },
-            ],
-          },
-        ],
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "Eres un asistente útil." },
+          { role: "user", content: message }
+        ]
       });
-      
-      responseData.response = response.output_text;
+
+      responseData.response = response.choices[0].message.content;
     }
 
-    // Si estamos en modo llamada, generar audio
+    // Si estamos en modo llamada, generar audio en Base64
     if (inCallMode) {
       try {
         const audioResponse = await openai.audio.speech.create({
@@ -87,18 +64,11 @@ exports.handler = async function(event, context) {
           voice: "alloy",
           input: responseData.response
         });
-        
-        // Guardar el archivo de audio temporalmente (alternativa: devolver el Buffer como Base64)
+
         const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
-        const audioPath = `/tmp/response-${Date.now()}.mp3`;
-        fs.writeFileSync(audioPath, audioBuffer);
-        
-        // Crear una URL firmada o usar algún método para servir el archivo
-        // Esto dependerá de tu configuración específica
-        responseData.audioUrl = `https://www.tutorvirtualinstructoria.com/${audioPath.split('/').pop()}`;
+        responseData.audioBase64 = audioBuffer.toString("base64");
       } catch (error) {
         console.error("Error al generar audio:", error);
-        // Continúa sin audio en caso de error
       }
     }
 
@@ -118,13 +88,12 @@ exports.handler = async function(event, context) {
 // Función para analizar los datos del formulario
 function parseFormData(event) {
   return new Promise((resolve, reject) => {
-    const form = formidable({ 
-      multiples: true,
-      uploadDir: '/tmp',
-      keepExtensions: true
-    });
-    
-    form.parse(event.body, (err, fields, files) => {
+    const form = formidable({ multiples: true, uploadDir: '/tmp', keepExtensions: true });
+
+    // Convertir el body en Buffer si es necesario
+    const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
+
+    form.parse(bodyBuffer, (err, fields, files) => {
       if (err) return reject(err);
       resolve({ fields, files });
     });
