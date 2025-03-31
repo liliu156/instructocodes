@@ -12,6 +12,7 @@ exports.handler = async (event, context) => {
   }
 };
 
+
 async function handleChatCompletion(event) {
   if (event.httpMethod !== "POST") {
     return {
@@ -198,7 +199,7 @@ async function handleTextToSpeech(event) {
 
     const response = await axios.post("https://api.openai.com/v1/audio/speech", {
       model: "tts-1",
-      voice: "alloy",
+      voice: "onyx",
       input: text
     }, {
       headers: {

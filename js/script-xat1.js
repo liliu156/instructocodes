@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const xatFlotant = document.getElementById('xatFlotant');
     const escoltantImatge = document.getElementById('escoltantImatge');
-    const indicadorEscoltant = document.getElementById('indicadorEscoltant');
     const audio = document.getElementById('audio');
     const tancarXat = document.getElementById('tancarXat');
     const instructo3Img = document.getElementById('instructo3-img');
@@ -128,20 +127,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleMicrophone() {
-        if (!isMicrophoneOpen) {
+        if (recognition && isMicrophoneOpen) {
+            recognition.stop();
+            microfonBtn.textContent = "🔇";
+            isMicrophoneOpen = false;
+        } else {
             if (!recognition) {
                 startVoiceRecognition();
             }
-            recognition.start();
-            microfonBtn.textContent = "🎤"; 
-            isMicrophoneOpen = true;
-        } else {
-            recognition.stop();  
-            microfonBtn.textContent = "🔇";
-            isMicrophoneOpen = false;
+            if (!isMicrophoneOpen) {
+                recognition.start();
+                microfonBtn.textContent = "🎤"; 
+                isMicrophoneOpen = true;
+            }
         }
-    }
-
+    }  
 
     function startVoiceRecognition() {
         if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.interimResults = false; 
 
         recognition.onstart = () => {
-            indicadorEscoltant.classList.remove("hidden");
+            escoltantImatge.classList.remove("hidden");
             floatingimg.classList.add("hidden");
         };
 
@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         recognition.onend = () => {
-            indicadorEscoltant.classList.add("hidden");
+            escoltantImatge.classList.add("hidden");
             escoltantImatge.classList.add("hidden");
         };
 
