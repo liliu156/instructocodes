@@ -5,8 +5,14 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "form-data": "^4.0.2"
+    "form-data": "^4.0.2",
+    "openai": "^4.28.0",
+    "formidable": "^3.5.1"
   },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  
   "name": "pagina-web-instr",
   "version": "1.0.0",
   "description": "",
@@ -27,4 +33,4 @@
     "url": "https://github.com/liliu156/instructocodes/issues"
   },
   "homepage": "https://github.com/liliu156/instructocodes#readme"
-}
+  }
