@@ -30,22 +30,25 @@ document.addEventListener("DOMContentLoaded", () => {
     function speakText(text, callback) {
         const synth = window.speechSynthesis;
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Optional: Select a specific voice
-        const voices = synth.getVoices();
-        const catalanVoice = voices.find(voice => voice.lang === 'ca-ES');
-        if (catalanVoice) {
-            utterance.voice = catalanVoice;
-        }
+
         
         // Configure speech properties
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        
-        // When speech ends
+    
+        utterance.onstart = () => {
+            escoltantImatge.classList.add("hidden");
+            floatingimg.classList.remove("hidden");
+        };
+
         utterance.onend = () => {
             floatingimg.classList.add("hidden");
             escoltantImatge.classList.remove("hidden");
+
+            if (!inCallMode) {
+                instructo2Img.classList.remove("hidden");
+                instructo3Img.classList.remove("hidden");
+            }
             if (callback) callback();
         };
         
@@ -63,13 +66,13 @@ document.addEventListener("DOMContentLoaded", () => {
         instructo3Img.classList.add("hidden");
 
         if (inCallMode) {
-            // Show floating image when AI is speaking
-            floatingimg.classList.remove("hidden");
-            escoltantImatge.classList.add("hidden");
+            instructo2Img.classList.add("hidden");
+            instructo3Img.classList.add("hidden");
+            escoltantImatge.classList.remove("hidden");
         } else {
-            instructo2Img.classList.remove("hidden");
-            instructo3Img.classList.remove("hidden");
-            floatingimg.classList.add("hidden");
+            instructo2Img.classList.add("hidden");
+            instructo3Img.classList.add("hidden");
+            floatingimg.classList.remove("hidden");
         }
                 if (callback) callback();
             
@@ -105,8 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     })
                     .catch(error => {
                         console.error("Error fetching audio:", error);
-                        // Fallback to browser TTS if server audio fails
-                        speakText(respuesta, null);
+                        speakText(respuesta, null);  // Fallback to browser TTS if server audio fails
                     });
             } else {
                 // Use browser TTS if no audio URL provided
@@ -144,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+
     function startVoiceRecognition() {
         if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
             console.error("El navegador no soporta reconocimiento de voz.");
@@ -155,7 +158,6 @@ document.addEventListener("DOMContentLoaded", () => {
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
         buttonEnviar.classList.add("hidden"); 
-        floatingimg.classList.add("hidden");
 
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'ca-ES';  
@@ -174,7 +176,6 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         recognition.onend = () => {
-            indicadorEscoltant.classList.add("hidden");
             escoltantImatge.classList.add("hidden");
         };
 
@@ -184,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function recordAudio() {
-
+        escoltantImatge.classList.add.apply("hidden");
         floatingimg.classList.add("hidden");
 
         try {
@@ -219,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), 1000); // Graba por 5 segundos
+            setTimeout(() => mediaRecorder.stop(), 1000); // Graba por 1 segundos
         } catch (error) {
             console.error("Error al acceder al micrófono:", error);
         }
@@ -238,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
             floatingimg.classList.add("hidden");
         };
 
-        floatingimg.classList.remove("hidden");
+        audioElement.play();
     }
 
     audio.addEventListener('click', () => { 
@@ -247,11 +248,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     tancarXat.addEventListener('click', () => {
-        xatFlotant.classList.add("hidden");
         inCallMode = false;
+        xatFlotant.classList.add("hidden"); 
+        escoltantImatge.classList.add("hidden");
+        floatingimg.classList.add("hidden");
         instructo2Img.classList.remove("hidden");
         instructo3Img.classList.remove("hidden"); 
-        escoltantImatge.classList.add("hidden");
         buttonEnviar.classList.remove("hidden"); 
     });
 
