@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const instructoMsgElement = document.createElement("p");
         instructoMsgElement.classList.add("instructo-missatge");
         instructoMsgElement.style.whiteSpace = "pre-line";
-        instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>"; 
+        instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>"+ message;
         chatOutput.appendChild(instructoMsgElement);
 
         instructo2Img.classList.add("hidden");
