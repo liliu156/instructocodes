@@ -61,14 +61,16 @@ document.addEventListener("DOMContentLoaded", () => {
         instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>";
         chatOutput.appendChild(instructoMsgElement);
 
-        // Hide instructo images and show floating image during typing animation
+        // Hide instructo images and show the appropriate image
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
         
         if (inCallMode) {
+            // In call mode, make sure escoltantImatge stays visible
             escoltantImatge.classList.remove("hidden");
             floatingimg.classList.add("hidden");
         } else {
+            // In text mode, show floating image during typing
             floatingimg.classList.remove("hidden");
         }
         
@@ -90,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         floatingimg.classList.add("hidden");
                         instructo2Img.classList.remove("hidden");
                         instructo3Img.classList.remove("hidden");
-                    }); 
+                    }, 500); 
                 }
                 if (callback) callback();
             }
@@ -102,6 +104,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function tutorVirtual(message) {
         try {
+            // Ensure escoltantImatge is visible during API call in call mode
+            if (inCallMode) {
+                escoltantImatge.classList.remove("hidden");
+                floatingimg.classList.add("hidden");
+            }
+            
             const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -147,6 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function enviarMissatge(message) {
         chatOutput.innerHTML += `<p class="user-missatge"><strong>Tu:</strong> ${message}</p>`;
+        
+        // Make sure escoltantImatge is visible when sending message in call mode
+        if (inCallMode) {
+            escoltantImatge.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
+        }
+        
         await tutorVirtual(message); 
     }
 
@@ -191,12 +206,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
+            // Keep escoltantImatge visible when recognition ends
+            escoltantImatge.classList.remove("hidden");
             enviarMissatge(transcript);  
             recognition.stop(); 
         };
 
         recognition.onend = () => {
-            escoltantImatge.classList.add("hidden");
+            // Don't hide escoltantImatge on recognition end in call mode
+            if (!inCallMode) {
+                escoltantImatge.classList.add("hidden");
+            }
         };
 
         recognition.onerror = (event) => {
@@ -213,8 +233,8 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         
         audioElement.onended = () => {
-            escoltantImatge.classList.remove("hidden");
             floatingimg.classList.add("hidden");
+            escoltantImatge.classList.remove("hidden");
         };
 
         audioElement.play();
