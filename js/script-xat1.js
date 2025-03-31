@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>" + 
                     words.slice(0, wordIndex + 1).join(' ');
                 wordIndex++;
-                setTimeout(typeNextWord, 50); // Adjust speed of typing here
+                setTimeout(typeNextWord, 150); // Adjust speed of typing here
             } else {
                 // Typing finished
                 if (!inCallMode) {
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         floatingimg.classList.add("hidden");
                         instructo2Img.classList.remove("hidden");
                         instructo3Img.classList.remove("hidden");
-                    }, 500); // Small delay before restoring images
+                    }); 
                 }
                 if (callback) callback();
             }
