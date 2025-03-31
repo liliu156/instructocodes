@@ -13,89 +13,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const floatingimg = document.getElementById('floating-img');
     const microfonBtn = document.getElementById('microfonBtn'); 
 
-    // Nuevos elementos para carga de archivos
-    const fileUploadBtn = document.createElement('button');
-    fileUploadBtn.id = 'fileUploadBtn';
-    fileUploadBtn.innerHTML = '📎';
-    fileUploadBtn.title = 'Subir archivo PDF';
-    fileUploadBtn.className = 'upload-btn';
-    
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.id = 'fileInput';
-    fileInput.accept = '.pdf';
-    fileInput.style.display = 'none';
-    
-    // Añadir los nuevos elementos al DOM
-    const inputContainer = userInput.parentElement;
-    inputContainer.appendChild(fileUploadBtn);
-    inputContainer.appendChild(fileInput);
-    
-    // Añadir estilos CSS para el botón de carga
-    const style = document.createElement('style');
-    style.textContent = `
-        .upload-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-            margin-left: 5px;
-        }
-        .upload-btn:hover {
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 50%;
-        }
-        .file-preview {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-        }
-        .file-preview-icon {
-            margin-right: 10px;
-            font-size: 1.5rem;
-        }
-        .file-preview-info {
-            flex-grow: 1;
-        }
-        .file-preview-name {
-            font-weight: bold;
-        }
-        .file-preview-size {
-            font-size: 0.8rem;
-            color: #666;
-        }
-        .file-preview-remove {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: #666;
-        }
-    `;
-    document.head.appendChild(style);
-
     instructo2Img.classList.remove("hidden");
     instructo3Img.classList.remove("hidden");
     floatingimg.classList.add("hidden");
 
+
     let inCallMode = false; 
     let recognition; 
     let isMicrophoneOpen = false;
-    let currentAudio = null;
-    let currentFile = null;
+    let currentAudio = null; // Para hacer un seguimiento del audio actual
 
     function countTokens(text) {
         return text.split(/\s+/).length;
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' bytes';
-        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-        else return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
     function speakText(text, callback) {
@@ -174,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
         typeNextWord();
     }
 
-    async function tutorVirtual(message, file = null) {
+    async function tutorVirtual(message) {
         try {
             // Ensure escoltantImatge is visible during API call in call mode
             if (inCallMode) {
@@ -182,20 +111,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 floatingimg.classList.add("hidden");
             }
             
-            // Crear FormData para enviar el mensaje y el archivo
-            const formData = new FormData();
-            formData.append('message', message);
-            formData.append('inCallMode', inCallMode);
-            
-            // Si hay un archivo para analizar, añadirlo a la solicitud
-            if (file) {
-                formData.append('file', file);
-            }
-            
-            // Usar fetch con FormData para enviar archivos
             const response = await fetch('/.netlify/functions/server', {
                 method: 'POST',
-                body: formData,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    message: message,
+                    inCallMode: inCallMode
+                }),
             });
     
             if (!response.ok) {
@@ -293,23 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function enviarMissatge(message, file = null) {
-        // Si hay un archivo, mostrar mensaje con vista previa
-        if (file) {
-            const filePreviewMsg = `<p class="user-missatge">
-                <strong>Tu:</strong> ${message}
-                <div class="file-preview">
-                    <div class="file-preview-icon">📄</div>
-                    <div class="file-preview-info">
-                        <div class="file-preview-name">${file.name}</div>
-                        <div class="file-preview-size">${formatFileSize(file.size)}</div>
-                    </div>
-                </div>
-            </p>`;
-            chatOutput.innerHTML += filePreviewMsg;
-        } else {
-            chatOutput.innerHTML += `<p class="user-missatge"><strong>Tu:</strong> ${message}</p>`;
-        }
+    async function enviarMissatge(message) {
+        chatOutput.innerHTML += `<p class="user-missatge"><strong>Tu:</strong> ${message}</p>`;
         
         // Make sure escoltantImatge is visible when sending message in call mode
         if (inCallMode) {
@@ -317,33 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
             floatingimg.classList.add("hidden");
         }
         
-        await tutorVirtual(message, file); 
-    }
-
-    // Funciones para manejo de archivos
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        // Validar el tipo de archivo (PDF)
-        if (file.type !== 'application/pdf') {
-            alert('Por favor, sube solo archivos PDF.');
-            fileInput.value = '';
-            return;
-        }
-        
-        // Validar el tamaño del archivo (máximo 32MB según las restricciones de OpenAI)
-        if (file.size > 32 * 1024 * 1024) {
-            alert('El archivo es demasiado grande. El tamaño máximo permitido es de 32MB.');
-            fileInput.value = '';
-            return;
-        }
-        
-        // Guardar el archivo en una variable para usarlo en el envío del mensaje
-        currentFile = file;
-        
-        // Mostrar un mensaje indicando que se ha seleccionado un archivo
-        userInput.placeholder = `Archivo seleccionado: ${file.name}. Escribe tu pregunta sobre este documento...`;
+        await tutorVirtual(message); 
     }
 
     function toggleMicrophone() {
@@ -457,13 +338,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     microfonBtn.addEventListener('click', toggleMicrophone);
 
-    // Manejar la selección de archivos
-    fileUploadBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
-    
-    fileInput.addEventListener('change', handleFileUpload);
-
     buttonEnviar.addEventListener('click', () => {
         if (!inCallMode) {
             const input = userInput.value.trim();
@@ -471,11 +345,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert("Por favor, escribe un mensaje.");
                 return;
             }
-            const fileToSend = currentFile;
-            currentFile = null; // Resetear después de enviarlo
-            userInput.placeholder = "Escribe tu mensaje...";
             userInput.value = '';
-            enviarMissatge(input, fileToSend);
+            enviarMissatge(input);
         }
     });
 
@@ -487,11 +358,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert("Por favor, escribe un mensaje.");
                 return;
             }
-            const fileToSend = currentFile;
-            currentFile = null; // Resetear después de enviarlo
-            userInput.placeholder = "Escribe tu mensaje...";
             userInput.value = '';
-            enviarMissatge(input, fileToSend);
+            enviarMissatge(input);
         }
     });
 

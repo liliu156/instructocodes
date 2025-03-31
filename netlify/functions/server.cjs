@@ -1,101 +1,236 @@
-// Archivo: functions/server.js
-const { OpenAI } = require('openai');
-const formidable = require('formidable');
-const fs = require('fs');
-const util = require('util');
-const pdfParse = require('pdf-parse');
+const axios = require('axios');
+const FormData = require('form-data');
+const busboy = require('busboy');
 
-const readFile = util.promisify(fs.readFile);
+exports.handler = async (event, context) => {
+  if (event.path.endsWith('/transcribe')) {
+    return handleTranscription(event);
+  } else if (event.path.endsWith('/speech')) {
+    return handleTextToSpeech(event);
+  } else {
+    return handleChatCompletion(event); // Default chat route
+  }
+};
 
-// Configurar OpenAI con tu clave API
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY_1
-});
 
-exports.handler = async function(event) {
-  if (event.httpMethod !== 'POST') {
+async function handleChatCompletion(event) {
+  if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
-      body: JSON.stringify({ error: 'Método no permitido' })
+      body: JSON.stringify({ error: "Method Not Allowed" })
     };
   }
 
   try {
-    const { fields, files } = await parseFormData(event);
-    const message = fields.message;
-    const inCallMode = fields.inCallMode === 'true';
-    const file = files.file ? files.file[0] : null;
+    // Parsear el cuerpo de la solicitud
+    const { message, inCallMode } = JSON.parse(event.body);
+    
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { 
+          role: 'system', 
+          content: "Ets un tutor virtual dissenyat per ajudar els estudiants a aprendre de manera efectiva. Proporciones explicacions clares, exemples pràctics i exercicis de prova adaptats al nivell de l'estudiant, amb les respostes respectives. També ajudes amb tècniques destudi, resols dubtes i ajudes a planificar horaris destudi. Fes preguntes a l'usuari per avaluar-ne la comprensió i fomenta l'aprenentatge actiu. Sempre demana aclariments si alguna cosa no és clara i ajusta les explicacions i la dificultat segons les necessitats de l'usuari. Fes servir emojis quan sigui útil per fer les respostes més dinàmiques i fàcils d'entendre. Recorda estructurar bé les respostes, en paràgrafs, perquè es puguin entendre millor. Si algú et pregunta, qui et va crear o una cosa similar, respon que va ser Lilu, una estudiant de segon de batxillerat científic com a part del seu TREC." 
+        }, 
+        { 
+          role: 'user', 
+          content: message 
+        }
+      ],
+      max_tokens: 500,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.API_KEY_1}`,
+      },
+    });
 
-    let responseData = { response: '', audioBase64: null };
-
-    if (file) {
-      // Leer el PDF y extraer el texto
-      const pdfData = await readFile(file.filepath);
-      const pdfText = (await pdfParse(pdfData)).text;
-
-      // Enviar el contenido extraído y el mensaje a OpenAI
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "Eres un asistente útil que analiza documentos PDF." },
-          { role: "user", content: `Este es el texto del documento:\n${pdfText}\n\nPregunta del usuario: ${message}` }
-        ]
-      });
-
-      responseData.response = response.choices[0].message.content;
-    } else {
-      // Procesar solo el mensaje sin archivo
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "Eres un asistente útil." },
-          { role: "user", content: message }
-        ]
-      });
-
-      responseData.response = response.choices[0].message.content;
-    }
-
-    // Si estamos en modo llamada, generar audio en Base64
-    if (inCallMode) {
-      try {
-        const audioResponse = await openai.audio.speech.create({
-          model: "tts-1",
-          voice: "alloy",
-          input: responseData.response
-        });
-
-        const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
-        responseData.audioBase64 = audioBuffer.toString("base64");
-      } catch (error) {
-        console.error("Error al generar audio:", error);
-      }
-    }
+    const responseText = response.data.choices[0].message.content;
 
     return {
       statusCode: 200,
-      body: JSON.stringify(responseData)
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
+      },
+      body: JSON.stringify({ 
+        response: responseText,
+        audioUrl: inCallMode ? 
+          `/.netlify/functions/server/speech?text=${encodeURIComponent(responseText)}` : null
+      })
     };
+
   } catch (error) {
-    console.error("Error en el servidor:", error);
+    console.error("Error al enviar el mensaje:", error);
+    
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Error interno del servidor' })
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
+      },
+      body: JSON.stringify({ 
+        error: "Error al enviar el mensaje", 
+        details: error.message 
+      })
     };
   }
-};
+}
 
-// Función para analizar los datos del formulario
-function parseFormData(event) {
+async function handleTranscription(event) {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method Not Allowed" })
+    };
+  }
+  
   return new Promise((resolve, reject) => {
-    const form = formidable({ multiples: true, uploadDir: '/tmp', keepExtensions: true });
-
-    // Convertir el body en Buffer si es necesario
-    const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
-
-    form.parse(bodyBuffer, (err, fields, files) => {
-      if (err) return reject(err);
-      resolve({ fields, files });
+    const bb = busboy({ headers: event.headers });
+    let audioFile = null;
+    
+    bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
+      const chunks = [];
+      file.on('data', (data) => {
+        chunks.push(data);
+      });
+      file.on('end', () => {
+        audioFile = Buffer.concat(chunks);
+      });
     });
+    
+    bb.on('finish', async () => {
+      if (!audioFile) {
+        resolve({
+          statusCode: 400,
+          body: JSON.stringify({ error: "No audio file provided" })
+        });
+        return;
+      }
+      try {
+        // Aquí procesarías el archivo de audio recibido
+        const formData = new FormData();
+        
+        // Necesitarás un middleware para procesar el form-data en Netlify Functions
+        // Este es un esquema simplificado
+        formData.append("file", audioFile, {
+          filename: "audio.mp3",
+          contentType: "audio/mp3"
+        });
+        formData.append("model", "whisper-1");
+    
+        const response = await axios.post("https://api.openai.com/v1/audio/transcriptions", 
+          formData, 
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.API_KEY_1}`,
+              ...formData.getHeaders()
+            }
+          }
+        );
+    
+        resolve({
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
+          },
+          body: JSON.stringify({ text: response.data.text })
+        });
+
+      } catch (error) {
+        console.error("Error en la transcripción:", error);
+      
+        resolve({
+          statusCode: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': 'https://www.tutorvirtualinstructoria.com'
+          },
+          body: JSON.stringify({ 
+            error: "Error en la transcripción", 
+            details: error.message 
+          })
+        });
+      }
+    });
+
+    bb.on('error', (error) => {
+      reject({
+        statusCode: 500,
+        body: JSON.stringify({ error: "Error processing form data" })
+      });
+    });
+    
+    // Si estás en Netlify Functions, el body probablemente sea base64
+    const buffer = event.isBase64Encoded
+      ? Buffer.from(event.body, 'base64')
+      : Buffer.from(event.body);
+    
+    bb.write(buffer);
+    bb.end();
   });
+}
+
+async function handleTextToSpeech(event) {
+  if (event.httpMethod !== "GET" && event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method Not Allowed" })
+    };
+  }
+
+  try {
+    // Obtener el texto del query parameter o del body
+    let text;
+    if (event.httpMethod === "GET") {
+      text = event.queryStringParameters?.text || "";
+    } else {
+      const body = JSON.parse(event.body);
+      text = body.text || "";
+    }
+
+    if (!text) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "No text provided" })
+      };
+    }
+
+    const response = await axios.post("https://api.openai.com/v1/audio/speech", {
+      model: "gpt-4o-mini-tts",
+      voice: "onyx",
+      input: text
+    }, {
+      headers: {
+        "Authorization": `Bearer ${process.env.API_KEY_1}`,
+        "Content-Type": "application/json"
+      },
+      responseType: 'arraybuffer'
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: Buffer.from(response.data).toString('base64'),
+      isBase64Encoded: true
+    };
+  } catch (error) {
+    console.error("Error en la generación de voz:", error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: "Error en la generación de voz", 
+        details: error.message 
+      })
+    };
+  }
 }
