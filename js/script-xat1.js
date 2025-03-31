@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function recordAudio() {
-        escoltantImatge.classList.add.apply("hidden");
+        escoltantImatge.classList.add("hidden");
         floatingimg.classList.add("hidden");
 
         try {
