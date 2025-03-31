@@ -7,7 +7,7 @@ const readFile = util.promisify(fs.readFile);
 
 // Configurar OpenAI con tu clave API
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY_1
 });
 
 exports.handler = async function(event, context) {
@@ -95,7 +95,7 @@ exports.handler = async function(event, context) {
         
         // Crear una URL firmada o usar algún método para servir el archivo
         // Esto dependerá de tu configuración específica
-        responseData.audioUrl = `https://tu-servidor.com/audios/${audioPath.split('/').pop()}`;
+        responseData.audioUrl = `https://www.tutorvirtualinstructoria.com/${audioPath.split('/').pop()}`;
       } catch (error) {
         console.error("Error al generar audio:", error);
         // Continúa sin audio en caso de error
