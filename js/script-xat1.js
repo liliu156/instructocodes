@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let inCallMode = false; 
     let recognition; 
     let isMicrophoneOpen = false;
+    let currentAudio = null; // Para hacer un seguimiento del audio actual
 
     function countTokens(text) {
         return text.split(/\s+/).length;
@@ -30,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const synth = window.speechSynthesis;
         const utterance = new SpeechSynthesisUtterance(text);
 
-        
         // Configure speech properties
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (callback) callback();
         };
         
+        currentAudio = utterance;
         synth.speak(utterance);
     }
     
@@ -126,26 +127,87 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
             const respuesta = data.response || 'Error: No es pot generar una resposta';
     
-            showInstructoMessage(respuesta, () => {
-                // If we have an audio URL and are in call mode, play it
-                if (inCallMode) {
-                    if (data.audioUrl){
-                        fetch(data.audioUrl)
-                            .then(response => response.blob())
-                            .then(blob => {
-                                const audioUrl = URL.createObjectURL(blob);
-                                playAudio(audioUrl);
-                            })
-                            .catch(error => {
-                                console.error("Error fetching audio:", error);
-                                speakText(respuesta, null);  // Fallback to browser TTS if server audio fails
-                            });
-                    } else {
-                        // Use browser TTS if no audio URL provided
-                        speakText(respuesta, null);
+            // Si estamos en modo llamada, obtener el audio primero para reproducirlo junto con el texto
+            let audioElement = null;
+            
+            if (inCallMode && data.audioUrl) {
+                try {
+                    const audioResponse = await fetch(data.audioUrl);
+                    const audioBlob = await audioResponse.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioElement = new Audio(audioUrl);
+                    
+                    audioElement.onplay = () => {
+                        escoltantImatge.classList.add("hidden");
+                        floatingimg.classList.remove("hidden");
+                    };
+                    
+                    audioElement.onended = () => {
+                        floatingimg.classList.add("hidden");
+                        escoltantImatge.classList.remove("hidden");
+                    };
+                } catch (error) {
+                    console.error("Error fetching audio:", error);
+                    // Continuamos sin audio en caso de error
+                }
+            }
+            
+            // Crear el elemento de mensaje
+            const instructoMsgElement = document.createElement("p");
+            instructoMsgElement.classList.add("instructo-missatge");
+            instructoMsgElement.style.whiteSpace = "pre-line";
+            instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>";
+            chatOutput.appendChild(instructoMsgElement);
+
+            // Ocultar imágenes de instructo y mostrar la imagen apropiada
+            instructo2Img.classList.add("hidden");
+            instructo3Img.classList.add("hidden");
+            
+            if (inCallMode) {
+                // En modo llamada, asegurarse de que escoltantImatge permanezca visible
+                escoltantImatge.classList.remove("hidden");
+                floatingimg.classList.add("hidden");
+            } else {
+                // En modo texto, mostrar la imagen flotante durante la escritura
+                floatingimg.classList.remove("hidden");
+            }
+            
+            // Reproducir audio junto con el inicio de la escritura en modo llamada
+            if (inCallMode) {
+                if (audioElement) {
+                    currentAudio = audioElement;
+                    audioElement.play();
+                } else {
+                    // Usar TTS del navegador si no hay URL de audio proporcionada
+                    speakText(respuesta, null);
+                }
+            }
+            
+            // Efecto de escritura palabra por palabra
+            const words = respuesta.split(' ');
+            let wordIndex = 0;
+            
+            function typeNextWord() {
+                if (wordIndex < words.length) {
+                    instructoMsgElement.innerHTML = "<strong>💡 Instructo: </strong>" + 
+                        words.slice(0, wordIndex + 1).join(' ');
+                    wordIndex++;
+                    setTimeout(typeNextWord, 150); // Ajustar velocidad de escritura aquí
+                } else {
+                    // Escritura finalizada
+                    if (!inCallMode) {
+                        // Solo restaurar imágenes de instructo en modo texto cuando se termina de escribir
+                        setTimeout(() => {
+                            floatingimg.classList.add("hidden");
+                            instructo2Img.classList.remove("hidden");
+                            instructo3Img.classList.remove("hidden");
+                        }, 500); 
                     }
                 }
-            });
+            }
+            
+            // Iniciar animación de escritura
+            typeNextWord();
 
         } catch (error) {
             console.error("Error al enviar el missatge:", error);
@@ -225,6 +287,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function playAudio(audioUrl) {
+        // Detener cualquier audio en reproducción
+        if (currentAudio) {
+            if (currentAudio instanceof Audio) {
+                currentAudio.pause();
+            } else if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+        }
+        
         const audioElement = new Audio(audioUrl);
         
         audioElement.onplay = () => {
@@ -237,6 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
             escoltantImatge.classList.remove("hidden");
         };
 
+        currentAudio = audioElement;
         audioElement.play();
     }
 
@@ -246,6 +318,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     tancarXat.addEventListener('click', () => {
+        // Detener audio si está reproduciéndose
+        if (currentAudio) {
+            if (currentAudio instanceof Audio) {
+                currentAudio.pause();
+            } else if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+        }
+        
         inCallMode = false;
         xatFlotant.classList.add("hidden"); 
         escoltantImatge.classList.add("hidden");
