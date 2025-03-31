@@ -27,6 +27,31 @@ document.addEventListener("DOMContentLoaded", () => {
         return text.split(/\s+/).length;
     }
 
+    function speakText(text, callback) {
+        const synth = window.speechSynthesis;
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Optional: Select a specific voice
+        const voices = synth.getVoices();
+        const catalanVoice = voices.find(voice => voice.lang === 'ca-ES');
+        if (catalanVoice) {
+            utterance.voice = catalanVoice;
+        }
+        
+        // Configure speech properties
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        
+        // When speech ends
+        utterance.onend = () => {
+            floatingimg.classList.add("hidden");
+            escoltantImatge.classList.remove("hidden");
+            if (callback) callback();
+        };
+        
+        synth.speak(utterance);
+    }
+    
     function showInstructoMessage(message, callback) {
         const instructoMsgElement = document.createElement("p");
         instructoMsgElement.classList.add("instructo-missatge");
@@ -36,24 +61,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         instructo2Img.classList.add("hidden");
         instructo3Img.classList.add("hidden");
-        floatingimg.classList.remove("hidden");
 
-        let i = 0;
-        const interval = setInterval(() => {
-            instructoMsgElement.innerHTML += message[i];
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-
-            if (i === message.length - 1) {
-                clearInterval(interval);
-                if (!inCallMode) {
-                    instructo2Img.classList.remove("hidden");
-                    instructo3Img.classList.remove("hidden");
-                    floatingimg.classList.add("hidden");
-                }
+        if (inCallMode) {
+            // Show floating image when AI is speaking
+            floatingimg.classList.remove("hidden");
+            escoltantImatge.classList.add("hidden");
+        } else {
+            instructo2Img.classList.remove("hidden");
+            instructo3Img.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
+        }
                 if (callback) callback();
-            }
-            i++;
-        }, 50);
+            
     }
 
     async function tutorVirtual(message) {
@@ -76,18 +95,25 @@ document.addEventListener("DOMContentLoaded", () => {
     
         showInstructoMessage(respuesta, () => {
             // If we have an audio URL and are in call mode, play it
-            if (inCallMode && data.audioUrl) {
-                fetch(data.audioUrl)
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const audioUrl = URL.createObjectURL(blob);
-                        playAudio(audioUrl);
+            if (inCallMode) {
+                if (data.audioUrl){
+                    fetch(data.audioUrl)
+                        .then(response => response.blob())
+                        .then(blob => {
+            const audioUrl = URL.createObjectURL(blob);
+            playAudio(audioUrl);
                     })
                     .catch(error => {
                         console.error("Error fetching audio:", error);
+                        // Fallback to browser TTS if server audio fails
+                        speakText(respuesta, null);
                     });
+            } else {
+                // Use browser TTS if no audio URL provided
+                speakText(respuesta, null);
             }
-        });
+        }
+    });
 
         } catch (error) {
             console.error("Error al enviar el missatge:", error);
@@ -201,15 +227,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function playAudio(audioUrl) {
         const audioElement = new Audio(audioUrl);
-        audioElement.play();
         
         audioElement.onplay = () => {
             escoltantImatge.classList.add("hidden");
+            floatingimg.classList.remove("hidden");
         };
         
         audioElement.onended = () => {
             escoltantImatge.classList.remove("hidden");
+            floatingimg.classList.add("hidden");
         };
+
+        floatingimg.classList.remove("hidden");
     }
 
     audio.addEventListener('click', () => { 
