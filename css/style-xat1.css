@@ -58,16 +58,6 @@ body {
     z-index: 9999;
 }
 
-#parlantImatge {
-    animation: float 3s ease-in-out infinite;
-    position: absolute;
-    margin-top: 480px;
-    margin-left: 60px;
-    height: auto;
-    width: 250px;
-    z-index: 9999;
-}
-
 @keyframes float {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-20px); }
