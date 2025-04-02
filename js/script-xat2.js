@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 floatingimg.classList.add("hidden");
             }
             
-            const response = await fetch('/.netlify/functions/server', {
+            const response = await fetch('/.netlify/functions/server2', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
